@@ -2913,7 +2913,6 @@
        "name":"Text",
        "type":"prose",
        "extensions":[
-          ".txt",
           ".fr",
           ".nb",
           ".ncl",

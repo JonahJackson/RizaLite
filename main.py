@@ -54,10 +54,9 @@ dest_dir_documents = "C:\\Users\\"+ getpass.getuser() +"\\Documents"
 if not os.path.exists("C:\\Users\\"+ getpass.getuser() +"\\Documents\\EXE"):
     os.makedirs("C:\\Users\\"+ getpass.getuser() +"\\Documents\\EXE")
 dest_exe_documents = "C:\\Users\\"+ getpass.getuser() +"\\Documents\\EXE"
-if not os.path.exists("C:\\Users\\"+ getpass.getuser() +"\\Documents\\Code"):
-    os.makedirs("C:\\Users\\"+ getpass.getuser() +"\\Documents\\Code")
-dest_code_documents = "C:\\Users\\"+ getpass.getuser() +"\\Documents\\Code"
-
+if not os.path.exists("C:\\Users\\"+ getpass.getuser() +"\\Documents\\MiscAndCode"):
+    os.makedirs("C:\\Users\\"+ getpass.getuser() +"\\Documents\\MiscAndCode")
+dest_code_documents = "C:\\Users\\"+ getpass.getuser() +"\\Documents\\MiscAndCode"
 
     
 def JsonToExtentionList(Json): # * Makes a list of strings from an input json file
@@ -68,10 +67,10 @@ def JsonToExtentionList(Json): # * Makes a list of strings from an input json fi
     for d in data:
         extentions_temp.append(d.get("extensions"))
     extentions_txt = open("extentions.txt", "a")
-    extentions_txt.write(str(extentions_temp).replace("[", "").replace("]", ""))
+    extentions_txt.write(str(extentions_temp).replace("[", "").replace("]", "").replace("\'", "\""))
         
     extentions_txt = open("extentions.txt", "r")
-    extentions = "extentions = [" + str(extentions_txt.read()).replace("[", "").replace("]", "") + "]"
+    extentions = "extentions = [" + str(extentions_txt.read()) + "]"
     exec(extentions)
     extentions_txt.close()
     os.remove("extentions.txt")
@@ -90,11 +89,12 @@ video_extensions = [".webm", ".mpg", ".mp2", ".mpeg", ".mpe", ".mpv", ".ogg",
 audio_extensions = [".m4a", ".flac", "mp3", ".wav", ".wma", ".aac"]
 # ? supported Document types
 document_extensions = [".doc", ".docx", ".odt",
-                       ".pdf", ".xls", ".xlsx", ".ppt", ".pptx"]
+                       ".pdf", ".xls", ".xlsx", ".ppt", ".pptx", ".txt"]
+# ? supported Executable types
 exe_extentions = [".exe", ".msi"]
+# ? supported Code types
+global code_Names
 code_extensions = JsonToExtentionList("programming_languages_extentions.json")
-
-
 
 
 def make_unique(dest, name):
@@ -109,12 +109,21 @@ def make_unique(dest, name):
 
 
 def move_file(dest, entry, name):
-    if exists(f"{dest}/{name}"):
-        unique_name = make_unique(dest, name)
-        oldName = str(join(dest, name))
-        newName = str(join(dest, unique_name))
-        os.rename(oldName, newName)
-    shutil.move(entry, dest)
+    try:
+        shutil.move(entry, dest)
+        logging.info(f"{entry} was moved to {dest}")
+    except:
+        try:
+            os.remove(entry)
+            logging.info("File Removed Because It Is A Duplictae")
+        except:
+            try:
+                shutil.rmtree(entry)
+                logging.info("Folder Removed Because It Is A Duplictae")
+            except:
+                return # if you can't fix the error, and it has no impact to the fuctionality. just ignore it!
+
+
 
 
 class MoverHandler(FileSystemEventHandler):
@@ -139,35 +148,39 @@ class MoverHandler(FileSystemEventHandler):
                 else:
                     dest = dest_dir_music
                 move_file(dest, entry, name)
-                logging.info(f"Moved audio file: {name}")
+                
 
     def check_video_files(self, entry, name):  # * Checks all Video Files
         for video_extension in video_extensions:
             if name.endswith(video_extension) or name.endswith(video_extension.upper()):
                 move_file(dest_dir_video, entry, name)
-                logging.info(f"Moved video file: {name}")
+                
 
     def check_image_files(self, entry, name):  # * Checks all Image Files
         for image_extension in image_extensions:
             if name.endswith(image_extension) or name.endswith(image_extension.upper()):
                 move_file(dest_dir_image, entry, name)
-                logging.info(f"Moved image file: {name}")
+                
 
     def check_document_files(self, entry, name):  # * Checks all Document Files
         for documents_extension in document_extensions:
             if name.endswith(documents_extension) or name.endswith(documents_extension.upper()):
                 move_file(dest_dir_documents, entry, name)
-                logging.info(f"Moved document file: {name}")
+                
     def check_exe_files(self, entry, name): # * Checks all EXE Files
         for exe_extention in exe_extentions:
             if name.endswith(exe_extention) or name.endswith(exe_extention.upper()):
                 move_file(dest_exe_documents, entry, name)
-                logging.info(f"Moved executable file: {name}")
+                
     def check_code_files(self, entry, name): # * Checks all Code Files
+        root, extention = splitext(name)
+        extention = extention.replace(".", "")
+        if not os.path.exists(dest_code_documents + "\\" + extention):
+                        os.makedirs(dest_code_documents + "\\" + extention)
         for code_extension in code_extensions:
             if name.endswith(code_extension) or name.endswith(code_extension.upper()):
-                move_file(dest_code_documents, entry, name)
-                logging.info(f"Moved code file: {name}")
+                move_file((dest_code_documents + "\\" + extention), entry, name)
+                    
 
 
 # ! NO NEED TO CHANGE BELOW CODE
